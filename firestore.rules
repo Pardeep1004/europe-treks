@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Treks collection: Read-only for everyone, write only via admin SDK
+    match /treks/{trekId} {
+      allow read: if true;
+      allow write: if false; // Only server-side admin can write
+    }
+    
+    // Reviews collection: Authenticated users can create and manage their own
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null 
+                    && request.resource.data.keys().hasAll(['trekId', 'userName', 'rating', 'comment', 'createdAt'])
+                    && request.resource.data.rating >= 1 
+                    && request.resource.data.rating <= 5;
+      allow update, delete: if request.auth != null;
+    }
+    
+    // Trek history (AI discoveries): Authenticated users only
+    match /trek-history/{historyId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

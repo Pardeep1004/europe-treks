@@ -1,0 +1,33 @@
+# Europe Treks - Deployment Files
+.env.local
+.env.production
+.env
+
+# Vercel
+.vercel
+
+# Build outputs
+.next
+out
+dist
+
+# Dependencies
+node_modules
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# TypeScript
+*.tsbuildinfo

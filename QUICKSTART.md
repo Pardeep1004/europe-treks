@@ -62,6 +62,7 @@ Your site will be live at: `https://europe-treks-XXXXX.vercel.app`
 - [ ] 🎯 **Map Centering**: Use the "Center Map" button on mobile after GPS lock
 - [ ] 🤖 **AI Discovery**: Try searching "Swiss Alps" and find more with AI
 - [ ] ⭐ **Review System**: Submit a real review with a photo
+- [ ] 💾 **Offline Map**: Save a route offline and verify the clean interface and fixed route path
 
 ## Custom Domain (Optional)
 1. Buy a domain from Namecheap/Google Domains (~$12/year)

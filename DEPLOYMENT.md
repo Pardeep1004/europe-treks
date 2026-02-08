@@ -22,6 +22,7 @@
 7. ✅ **Distance Logic**: Implemented smart range (Min-Max) filtering
 8. ✅ **Mobile GPS**: Fixed live location for mobile/tablet browsers (manual trigger, relaxed timeouts)
 9. ✅ **Home Location**: Improved "Use My Location" with high accuracy and proactive error guidance
+10. ✅ **Map Route**: Fixed intermittent route changes and improved offline map UI experience (deterministic path, auto-hiding download window, and clean offline view)
 
 ### 🔧 **Production Optimizations Needed:**
 

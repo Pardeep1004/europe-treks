@@ -34,7 +34,9 @@ export default function MapClient({ trek }: Props) {
     const [showEmergency, setShowEmergency] = useState(false);
     const [history, setHistory] = useState<string>('');
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
 
     // Generate a simulated but realistic-looking trail path
     const trailPath = useMemo(() => {
@@ -123,26 +125,43 @@ export default function MapClient({ trek }: Props) {
         fetchHistory();
     }, [trek]);
 
-    useEffect(() => {
+    const startTracking = () => {
         if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+            setIsLocating(true);
+            setError(null);
+
             const watchId = navigator.geolocation.watchPosition(
-                (pos) => setUserPos([pos.coords.latitude, pos.coords.longitude]),
+                (pos) => {
+                    setUserPos([pos.coords.latitude, pos.coords.longitude]);
+                    setIsLocating(false);
+                },
                 (err) => {
                     const messages = {
-                        [err.PERMISSION_DENIED]: 'Location permission denied by user.',
-                        [err.POSITION_UNAVAILABLE]: 'Location information is unavailable.',
-                        [err.TIMEOUT]: 'Location request timed out.',
+                        [err.PERMISSION_DENIED]: 'Location permission denied. Please enable GPS and refresh.',
+                        [err.POSITION_UNAVAILABLE]: 'Location signal weak or unavailable.',
+                        [err.TIMEOUT]: 'Location request timed out. Retrying...',
                     };
-                    console.warn(`[Geolocation] ${messages[err.code as keyof typeof messages] || 'An unknown error occurred.'}`);
+                    const msg = messages[err.code as keyof typeof messages] || 'An unknown error occurred.';
+                    console.warn(`[Geolocation] ${msg}`);
+                    setError(msg);
+                    setIsLocating(false);
                 },
                 {
                     enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
+                    timeout: 15000,
+                    maximumAge: 5000
                 }
             );
-            return () => navigator.geolocation.clearWatch(watchId);
+            return watchId;
         }
+        return null;
+    };
+
+    useEffect(() => {
+        const watchId = startTracking();
+        return () => {
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        };
     }, []);
 
     const emergencyNumber = trek.emergencyContact || '112';
@@ -174,16 +193,27 @@ export default function MapClient({ trek }: Props) {
                 />
 
                 {/* Navigation Dashboards and SOS Button - Kept same as previous version */}
-                <div style={{
-                    position: 'absolute', top: '2rem', left: '2rem', zIndex: 1000,
+                <div className="nav-dashboard" style={{
+                    position: 'absolute', top: 'var(--dash-top, 2rem)', left: 'var(--dash-left, 2rem)',
+                    right: 'var(--dash-right, auto)', bottom: 'var(--dash-bottom, auto)',
+                    zIndex: 1000,
                     background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)',
                     padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)', width: '280px'
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)', width: 'var(--dash-width, 280px)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <h5 style={{ margin: 0, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.7rem' }}>Navigation Center</h5>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: userPos ? '#4ade80' : '#fbbf24', boxShadow: userPos ? '0 0 10px #4ade80' : 'none' }}></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {isLocating && <span className="pulse-dot" style={{ width: '8px', height: '8px' }}></span>}
+                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: userPos ? '#4ade80' : (error ? '#ef4444' : '#fbbf24'), boxShadow: userPos ? '0 0 10px #4ade80' : 'none' }}></div>
+                        </div>
                     </div>
+
+                    {error && !userPos && (
+                        <div style={{ color: '#ef4444', fontSize: '0.7rem', marginBottom: '1rem', background: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                            ⚠️ {error}
+                        </div>
+                    )}
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div>
@@ -204,18 +234,44 @@ export default function MapClient({ trek }: Props) {
                                 ) : (realAmenities[0]?.name || 'No Service Found (±3km)')}
                             </h4>
                         </div>
-                        <div style={{ gridColumn: 'span 2' }}>
+                        <div style={{ gridColumn: 'span 2', display: 'flex', gap: '0.4rem' }}>
+                            {!userPos && (
+                                <button
+                                    onClick={() => startTracking()}
+                                    className="search-button"
+                                    style={{
+                                        padding: '0.8rem', flex: 1, borderRadius: '0.8rem', fontSize: '0.85rem',
+                                        background: 'rgba(255,255,255,0.1)', color: 'white'
+                                    }}
+                                    disabled={isLocating}
+                                >
+                                    {isLocating ? '⌛' : '📍'}
+                                </button>
+                            )}
                             <button
                                 onClick={() => setIsNavigating(!isNavigating)}
                                 className="search-button"
                                 style={{
-                                    padding: '0.8rem', width: '100%', borderRadius: '0.8rem', fontSize: '0.85rem',
+                                    padding: '0.8rem', flex: 3, borderRadius: '0.8rem', fontSize: '0.85rem',
                                     background: isNavigating ? '#ef4444' : 'var(--primary)',
                                     color: 'white'
                                 }}
                             >
-                                {isNavigating ? '⏹️ Stop Guidance' : '🚀 Start Navigation'}
+                                {isNavigating ? '⏹️ Stop' : '🚀 Start'}
                             </button>
+                            {userPos && (
+                                <button
+                                    onClick={() => alert("Recentering map on your current position...")}
+                                    className="search-button"
+                                    style={{
+                                        padding: '0.8rem', flex: 1, borderRadius: '0.8rem', fontSize: '1rem',
+                                        background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #3b82f6', color: 'white'
+                                    }}
+                                    title="Center Map"
+                                >
+                                    🎯
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

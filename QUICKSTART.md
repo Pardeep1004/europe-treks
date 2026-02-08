@@ -1,5 +1,7 @@
 # 🚀 Quick Start - Deploy to Vercel (5 Minutes)
 
+[← Back to Main README](README.md)
+
 ## Prerequisites
 - GitHub account
 - Vercel account (free - sign up with GitHub)
@@ -53,10 +55,11 @@ Your site will be live at: `https://europe-treks-XXXXX.vercel.app`
 5. Click "Publish"
 
 ## Test Your Live Site
-- [ ] 📍 **Live Location**: Click "Use My Location" and find trails within 50km
+- [ ] 📍 **Live Location**: Click "Use My Location" (Home) or "Retry GPS" (Map) and find trails within 50km
 - [ ] 📏 **Distance Range**: Select 5-10km and see exact matching results
-- [ ] 🎨 **Responsive UI**: Test on phone, tablet, and desktop
+- [ ] 🎨 **Responsive UI**: Test on phone, tablet, and desktop (Fixed Nav Dashboard on mobile)
 - [ ] 📸 **Clickable Images**: Tap any trek image to view details
+- [ ] 🎯 **Map Centering**: Use the "Center Map" button on mobile after GPS lock
 - [ ] 🤖 **AI Discovery**: Try searching "Swiss Alps" and find more with AI
 - [ ] ⭐ **Review System**: Submit a real review with a photo
 

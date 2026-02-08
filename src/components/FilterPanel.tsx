@@ -28,17 +28,24 @@ export function FilterPanel(props: Props) {
                     <span>Where to?</span>
                     <button
                         onClick={props.onUseMyLocation}
+                        className="location-mini-button"
                         style={{
-                            background: 'rgba(34, 197, 94, 0.1)',
+                            background: 'rgba(34, 197, 94, 0.15)',
                             border: '1px solid var(--primary)',
                             color: 'var(--primary)',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontSize: '0.7rem',
-                            cursor: 'pointer'
+                            padding: '5px 12px',
+                            borderRadius: '8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.1)'
                         }}
                     >
-                        📍 Use My Location
+                        <span>📍</span> Use My Location
                     </button>
                 </div>
                 <input

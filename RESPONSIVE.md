@@ -104,7 +104,10 @@ Desktop:   1024px+    (3 columns)
 4. ✅ Adaptive typography
 5. ✅ Touch-friendly buttons
 6. ✅ Prevent horizontal scroll
-7. ✅ Responsive maps
+7. ✅ Responsive maps (Adaptive Dashboard placement)
+8. ✅ High-accuracy GPS with manual "Retry" for mobile browsers
+9. ✅ Mobile-optimized "Center Map" functionality
+10. ✅ Enhanced touch targets for location buttons (Active/Hover states)
 
 ### **Component Updates:**
 1. ✅ Category pills use CSS Grid (auto-fit)

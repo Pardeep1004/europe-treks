@@ -90,7 +90,14 @@ export default function HomeClient({ treks }: Props) {
         }, (error) => {
             console.error(error);
             setIsSearching(false);
-            alert("Could not get your location. Please enter it manually.");
+            const msg = error.code === 1 ? "Location permission denied. Please allow GPS access." :
+                error.code === 3 ? "Location timed out. Please try again or enter manually." :
+                    "Could not get your location. Please enter it manually.";
+            alert(msg);
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         });
     };
 

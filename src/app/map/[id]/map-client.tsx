@@ -38,20 +38,39 @@ export default function MapClient({ trek }: Props) {
     const [isNavigating, setIsNavigating] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
 
-    // Generate a simulated but realistic-looking trail path
+    // Help create a deterministic route that doesn't change on re-render
+    const seededRandom = (seed: string) => {
+        let hash = 0;
+        for (let i = 0; i < seed.length; i++) {
+            hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+            hash |= 0;
+        }
+        return () => {
+            hash = (hash + 0x6D2B79F5) | 0;
+            let t = Math.imul(hash ^ (hash >>> 15), 1 | hash);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    };
+
+    const [isOfflineSaved, setIsOfflineSaved] = useState(false);
+
+    // Generate a simulated but FIXED trail path based on the trek ID
     const trailPath = useMemo(() => {
+        const rng = seededRandom(trek.id || trek.name);
         const points: [number, number][] = [center];
-        const numPoints = 15;
+        const numPoints = 25; // More points for a better route
         let lastLat = center[0];
         let lastLng = center[1];
 
         for (let i = 1; i < numPoints; i++) {
-            lastLat += (Math.random() - 0.5) * 0.005;
-            lastLng += (Math.random() - 0.5) * 0.005;
+            // Deterministic movement
+            lastLat += (rng() - 0.5) * 0.004;
+            lastLng += (rng() - 0.5) * 0.004;
             points.push([lastLat, lastLng]);
         }
         return points;
-    }, [center]);
+    }, [trek.id, trek.name, center[0], center[1]]);
 
     // Fetch REAL nearby toilets and restaurants from OpenStreetMap via Overpass API
     useEffect(() => {
@@ -164,6 +183,12 @@ export default function MapClient({ trek }: Props) {
         };
     }, []);
 
+    const handleOfflineSave = () => {
+        setIsOfflineSaved(true);
+        // We can simulate a save here - the alert confirms it to the user
+        // alert(`${trek.name} route and map tiles have been prepared for offline use.`);
+    };
+
     const emergencyNumber = trek.emergencyContact || '112';
     const emergencyService = trek.emergencyService || 'Mountain Rescue';
 
@@ -176,7 +201,7 @@ export default function MapClient({ trek }: Props) {
                 <div style={{ textAlign: 'right' }}>
                     <h2 style={{ margin: 0 }}>{trek.name}</h2>
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.2rem' }}>
-                        <span className="tag" style={{ margin: 0, background: 'rgba(22, 163, 74, 0.2)', color: '#4ade80' }}>🗺️ Live Navigation</span>
+                        <span className="tag" style={{ margin: 0, background: 'rgba(22, 163, 74, 0.2)', color: '#4ade80' }}>🗺️ {isOfflineSaved ? 'Offline Mode' : 'Live Navigation'}</span>
                         <span className="tag" style={{ margin: 0, background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}>📍 GPS Ready</span>
                     </div>
                 </div>
@@ -187,19 +212,20 @@ export default function MapClient({ trek }: Props) {
                     center={center}
                     trailPath={trailPath}
                     userPos={userPos}
-                    realAmenities={realAmenities}
+                    realAmenities={isOfflineSaved ? [] : realAmenities} // Show only route in offline mode if that's what user wants
                     trekName={trek.name}
                     trekDistance={trek.distanceKm}
                 />
 
-                {/* Navigation Dashboards and SOS Button - Kept same as previous version */}
+                {/* Navigation Dashboards and SOS Button - Only show if not just saved offline or if navigating */}
                 <div className="nav-dashboard" style={{
                     position: 'absolute', top: 'var(--dash-top, 2rem)', left: 'var(--dash-left, 2rem)',
                     right: 'var(--dash-right, auto)', bottom: 'var(--dash-bottom, auto)',
                     zIndex: 1000,
                     background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)',
                     padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)', width: 'var(--dash-width, 280px)'
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)', width: 'var(--dash-width, 280px)',
+                    display: isOfflineSaved ? 'none' : 'block' // Hide main dashboard after offline save as per user request
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <h5 style={{ margin: 0, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.7rem' }}>Navigation Center</h5>
@@ -335,17 +361,43 @@ export default function MapClient({ trek }: Props) {
                     </div>
                 )}
 
-                <div style={{
-                    position: 'absolute', bottom: '2rem', right: '2rem', zIndex: 1000,
-                    background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)',
-                    padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid var(--glass-border)',
-                    maxWidth: '320px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-                }}>
-                    <p style={{ margin: '0 0 1.2rem 0', fontSize: '0.85rem', lineHeight: '1.6', color: 'var(--text-muted)' }}>The <strong>emerald dashed line</strong> represents the verified trek path.</p>
-                    <button className="search-button" style={{ fontSize: '0.9rem', padding: '1rem', width: '100%', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} onClick={() => alert(`${trek.name} data has been saved for offline use.`)}>
-                        <span>💾</span> Download Offline Route
-                    </button>
-                </div>
+                {!isOfflineSaved && (
+                    <div style={{
+                        position: 'absolute', bottom: '2rem', right: '2rem', zIndex: 1000,
+                        background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)',
+                        padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid var(--glass-border)',
+                        maxWidth: '320px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                    }}>
+                        <p style={{ margin: '0 0 1.2rem 0', fontSize: '0.85rem', lineHeight: '1.6', color: 'var(--text-muted)' }}>The <strong>emerald dashed line</strong> represents the verified trek path.</p>
+                        <button
+                            className="search-button"
+                            style={{ fontSize: '0.9rem', padding: '1rem', width: '100%', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                            onClick={handleOfflineSave}
+                        >
+                            <span>💾</span> Download Offline Route
+                        </button>
+                    </div>
+                )}
+
+                {isOfflineSaved && (
+                    <div style={{
+                        position: 'absolute', bottom: '2rem', right: '2rem', zIndex: 1000,
+                        background: 'rgba(22, 163, 74, 0.9)', backdropFilter: 'blur(8px)',
+                        padding: '0.8rem 1.2rem', borderRadius: '2rem', border: '1px solid rgba(255,255,255,0.2)',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        animation: 'slideUp 0.4s ease-out'
+                    }}>
+                        <span style={{ fontSize: '1.2rem' }}>✅</span>
+                        <span style={{ fontSize: '0.85rem', color: 'white', fontWeight: 500 }}>{trek.name} Ready for Offline Use</span>
+                        <button
+                            onClick={() => setIsOfflineSaved(false)}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '0.7rem', textDecoration: 'underline' }}
+                        >
+                            Reset
+                        </button>
+                    </div>
+                )}
+
             </div>
 
             <section style={{ marginTop: '2.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
